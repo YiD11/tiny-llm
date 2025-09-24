@@ -20,6 +20,8 @@ dependencies = [
     "setuptools>=62",
     "nanobind==2.4.0",
     "pytest-benchmark>=5.1.0",
+    "ipykernel>=6.30.1",
+    "dotenv>=0.9.9",
 ]
 
 [tool.pdm.scripts]

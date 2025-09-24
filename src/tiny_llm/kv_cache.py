@@ -98,4 +98,14 @@ class TinyKvFullCache(TinyKvCache):
         mask_length: int | None = None,
         mask: mx.array | str | None = None,
     ) -> tuple[mx.array, mx.array, int, Optional[mx.array]]:
-        pass
+        if self.key_values is None:
+            batch_size, seq_len, num_heads, head_dim = key.shape
+            self.key_values = [
+                key[:], # slicing an array creates a copy in mlx
+                value[:],
+            ]
+            return self.key_values[0], self.key_values[1]
+        
+        self.key_values[0] = mx.concat([self.key_values[0], key], axis=1)
+        self.key_values[1] = mx.concat([self.key_values[1], value], axis=1)
+        return self.key_values[0], self.key_values[1]

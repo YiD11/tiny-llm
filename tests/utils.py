@@ -1,12 +1,14 @@
+import os
 import numpy as np
 import mlx.core as mx
 import huggingface_hub
+import dotenv
 
 AVAILABLE_STREAMS = [mx.cpu, mx.gpu]
 AVAILABLE_STREAMS_IDS = ["cpu", "gpu"]
 PRECISIONS = [mx.float32, mx.float16]
 PRECISION_IDS = ["f32", "f16"]
-
+dotenv.load_dotenv()
 
 def assert_allclose(
     a: mx.array,
@@ -52,9 +54,10 @@ def np_type_to_mx_type(np_type: np.dtype) -> mx.Dtype:
 
 
 def qwen_2_05b_model_exists() -> bool:
+    huggingface_hub.login
     try:
         huggingface_hub.snapshot_download(
-            "Qwen/Qwen2-0.5B-Instruct-MLX", local_files_only=True
+            "Qwen/Qwen2-0.5B-Instruct-MLX", local_files_only=True, local_dir=os.getenv("0.5B_PATH")
         )
         return True
     except Exception as e:
@@ -65,7 +68,7 @@ def qwen_2_05b_model_exists() -> bool:
 def qwen_2_15b_model_exists() -> bool:
     try:
         huggingface_hub.snapshot_download(
-            "Qwen/Qwen2-1.5B-Instruct-MLX", local_files_only=True
+            "Qwen/Qwen2-1.5B-Instruct-MLX", local_files_only=True, local_dir=os.getenv("1.5B_PATH")
         )
         return True
     except Exception as e:
@@ -75,8 +78,9 @@ def qwen_2_15b_model_exists() -> bool:
 
 def qwen_2_7b_model_exists() -> bool:
     try:
+        
         huggingface_hub.snapshot_download(
-            "Qwen/Qwen2-7B-Instruct-MLX", local_files_only=True
+            "Qwen/Qwen2-7B-Instruct-MLX", local_files_only=True, local_dir=os.getenv("7B_PATH")
         )
         return True
     except Exception as e:
