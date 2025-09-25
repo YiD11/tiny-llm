@@ -9,10 +9,8 @@ def scaled_dot_product_attention_simple(
     scale: float | None = None,
     mask: mx.array | None = None,
 ) -> mx.array:
-    dim_size = len(key.shape)
-    key_transpose = key.transpose(*range(dim_size-2), dim_size-1, dim_size-2)
-    attention = mx.matmul(query, key_transpose)
-    attention = attention * (scale if scale else 1 / key.shape[-1]**0.5)
+    attention = mx.matmul(query, key.swapaxes(-2, -1))
+    attention = attention * (scale if scale is not None else mx.rsqrt(key.shape[-1]))
     if mask is not None:
         attention = attention + mask
     output = mx.matmul(softmax(attention, axis=-1), value)
@@ -73,7 +71,9 @@ class SimpleMultiHeadAttention:
 
 
 def causal_mask(L: int, S: int, dtype: mx.Dtype) -> mx.array:
-    pass
+    mask = mx.tril(mx.ones((L, S)), k=(S - L))
+    mask = mx.where(mask, mx.array(0), mx.array(-mx.inf)).astype(dtype)
+    return mask
 
 
 def scaled_dot_product_attention_grouped(
@@ -83,7 +83,30 @@ def scaled_dot_product_attention_grouped(
     scale: float | None = None,
     mask: mx.array | str | None = None,
 ) -> mx.array:
-    pass
+    output_shape = query.shape
+    query_head, query_len, head_dim = query.shape[-3:]
+    kv_head, key_len, _ = key.shape[-3:]
+    assert query_head % kv_head == 0, "query_head must be divisible by key_head"
+    batch_dims = query.shape[:-3]
+    group_size = query_head // kv_head
+    dtype = query.dtype
+    query = query.reshape(
+        *batch_dims, kv_head, group_size, query_len, head_dim
+    ).astype(mx.float32)
+    key = key.reshape(
+        *batch_dims, kv_head, 1, key_len, head_dim
+    ).astype(mx.float32)
+    value = value.reshape(
+        *batch_dims, kv_head, 1, key_len, head_dim
+    ).astype(mx.float32)
+    scale = scale if scale is not None else mx.rsqrt(head_dim)
+    scores = mx.matmul(query, key.swapaxes(-2, -1)) * scale
+    if mask is not None:
+        if mask == "causal":
+            mask = causal_mask(query_len, key_len, query.dtype)
+        scores = scores + mask
+    output = mx.matmul(softmax(scores, axis=-1), value)
+    return output.reshape(output_shape).astype(dtype)
 
 
 def flash_attention(
