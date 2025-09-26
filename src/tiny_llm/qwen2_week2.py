@@ -6,7 +6,7 @@ from .positional_encoding import RoPE
 from typing import Any
 from .embedding import Embedding
 from .quantize import dequantize_linear, QuantizedWeights
-from .kv_cache import TinyKvCache
+from .kv_cache import TinyKvCache, TinyKvFullCache
 
 
 class Qwen2MultiHeadAttention:
@@ -301,6 +301,8 @@ class Qwen2ModelWeek2:
     ) -> mx.array:
         hidden = self.embedding(inputs)
         for i in range(self.num_hidden_layers):
+            if len(cache) < i + 1:
+                cache.extend([TinyKvFullCache() for _ in range(max(1, 3 * len(cache) // 4))])
             hidden = self.layers[i](hidden, offset, cache[i], mask="causal")
         hidden = self.norm(hidden)
         if self.w_lm_head is not None:
