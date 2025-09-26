@@ -87,8 +87,8 @@ def scaled_dot_product_attention_grouped(
     query_head, query_len, head_dim = query.shape[-3:]
     kv_head, key_len, _ = key.shape[-3:]
     assert query_head % kv_head == 0, "query_head must be divisible by key_head"
-    batch_dims = query.shape[:-3]
     group_size = query_head // kv_head
+    batch_dims = query.shape[:-3]
     dtype = query.dtype
     query = query.reshape(
         *batch_dims, kv_head, group_size, query_len, head_dim

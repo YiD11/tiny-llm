@@ -5,6 +5,8 @@ from .qwen2_week2 import Qwen2ModelWeek2
 from typing import Callable
 from tqdm import tqdm
 from itertools import count
+from .kv_cache import TinyKvCache
+
 
 
 def simple_generate(
@@ -40,5 +42,23 @@ def simple_generate(
 def simple_generate_with_kv_cache(
     model: Qwen2ModelWeek2, tokenizer: TokenizerWrapper, prompt: str
 ) -> str:
-    def _step(model, y, offset, kv_cache):
-        pass
+    def _step(model: Qwen2ModelWeek2, y, offset: int, kv_cache: list[TinyKvCache]):
+        output_logits = model(y[None], offset=offset, kv_cache=kv_cache)
+        logits = output_logits[:, -1, :]
+        logprobs = logits - mx.logsumexp(logits, keepdims=True)
+        next_token_id = mx.argmax(logprobs, axis=-1)
+        return next_token_id, output_logits
+
+    token_ids = mx.array(tokenizer.encode(prompt, add_special_tokens=False))
+    detokenizer: NaiveStreamingDetokenizer = tokenizer.detokenizer
+    detokenizer.reset()
+    kv_cache: list[TinyKvCache] = []
+    for iter in tqdm(count(), desc="Looping"):
+        next_token_id, _ = _step(model, token_ids, offset=iter, kv_cache=kv_cache)
+        if next_token_id.item() in tokenizer.eos_token_ids:
+            break
+        token_ids = mx.concat([token_ids, next_token_id])
+        detokenizer.add_token(next_token_id.item())
+    response = detokenizer.last_segment
+    print(response)
+    return response

@@ -105,7 +105,7 @@ class TinyKvFullCache(TinyKvCache):
                 value[:],
             ]
         else:
-            self.key_values[0] = mx.concat([self.key_values[0], key], axis=1)
-            self.key_values[1] = mx.concat([self.key_values[1], value], axis=1)
+            self.key_values[0] = mx.concat([self.key_values[0], key], axis=2)
+            self.key_values[1] = mx.concat([self.key_values[1], value], axis=2)
             
         return self.key_values[0][:], self.key_values[1][:]
