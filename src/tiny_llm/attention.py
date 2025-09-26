@@ -70,8 +70,8 @@ class SimpleMultiHeadAttention:
         return self.hidden_size // self.num_heads
 
 
-def causal_mask(L: int, S: int, dtype: mx.Dtype) -> mx.array:
-    mask = mx.tril(mx.ones((L, S)), k=(S - L))
+def causal_mask(L: int, S: int, dtype: mx.Dtype = mx.float32) -> mx.array:
+    mask = mx.tril(mx.ones((L, S)), k=max(0, S - L))
     mask = mx.where(mask, mx.array(0), mx.array(-mx.inf)).astype(dtype)
     return mask
 
@@ -104,6 +104,8 @@ def scaled_dot_product_attention_grouped(
     if mask is not None:
         if mask == "causal":
             mask = causal_mask(query_len, key_len, query.dtype)
+        else:
+            mask = mask.reshape(*batch_dims, kv_head, group_size, query_len, key_len)
         scores = scores + mask
     output = mx.matmul(softmax(scores, axis=-1), value)
     return output.reshape(output_shape).astype(dtype)

@@ -1,5 +1,5 @@
 import mlx.core as mx
-from mlx_lm.tokenizer_utils import TokenizerWrapper
+from mlx_lm.tokenizer_utils import TokenizerWrapper, NaiveStreamingDetokenizer
 from .qwen2_week1 import Qwen2ModelWeek1
 from .qwen2_week2 import Qwen2ModelWeek2
 from typing import Callable
@@ -24,7 +24,7 @@ def simple_generate(
         return next_token_id, output_logits
 
     token_ids = mx.array(tokenizer.encode(prompt, add_special_tokens=False))
-    detokenizer = tokenizer.detokenizer
+    detokenizer: NaiveStreamingDetokenizer = tokenizer.detokenizer
     detokenizer.reset()
     for _ in tqdm(count(), desc="Looping"):
         next_token_id, _ = _step(model, token_ids)
