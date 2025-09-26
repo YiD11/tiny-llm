@@ -43,7 +43,7 @@ def simple_generate_with_kv_cache(
     model: Qwen2ModelWeek2, tokenizer: TokenizerWrapper, prompt: str
 ) -> str:
     def _step(model: Qwen2ModelWeek2, y, offset: int, kv_cache: list[TinyKvCache]):
-        output_logits = model(y[None], offset=offset, kv_cache=kv_cache)
+        output_logits = model(y[None], offset=offset, cache=kv_cache)
         logits = output_logits[:, -1, :]
         logprobs = logits - mx.logsumexp(logits, keepdims=True)
         next_token_id = mx.argmax(logprobs, axis=-1)
