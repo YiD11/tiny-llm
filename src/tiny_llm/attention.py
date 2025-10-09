@@ -105,6 +105,7 @@ def scaled_dot_product_attention_grouped(
         if mask == "causal":
             mask = causal_mask(query_len, key_len, query.dtype)
         else:
+            mask = mx.broadcast_to(mask, (*batch_dims, query_head, query_len, key_len))
             mask = mask.reshape(*batch_dims, kv_head, group_size, query_len, key_len)
         scores = scores + mask
     output = mx.matmul(softmax(scores, axis=-1), value)

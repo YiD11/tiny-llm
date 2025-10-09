@@ -25,17 +25,25 @@ class RoPE:
         _, seq_len, _, head_dim = x.shape
         assert head_dim == self.dims, "head_dim must be equal to dims"
         if offset is None:
-            sin = self.sin[:seq_len, :].reshape(1, seq_len, 1, head_dim // 2)
-            cos = self.cos[:seq_len, :].reshape(1, seq_len, 1, head_dim // 2)
+            sin = self.sin[:seq_len, :head_dim].reshape(1, seq_len, 1, head_dim // 2)
+            cos = self.cos[:seq_len, :head_dim].reshape(1, seq_len, 1, head_dim // 2)
         elif isinstance(offset, slice):
-            sin = self.sin[offset, :].reshape(1, -1, 1, head_dim // 2)
-            cos = self.cos[offset, :].reshape(1, -1, 1, head_dim // 2)
+            sin = self.sin[offset, :head_dim].reshape(1, -1, 1, head_dim // 2)
+            cos = self.cos[offset, :head_dim].reshape(1, -1, 1, head_dim // 2)
         else:
             sin = mx.concat(
-                [self.sin[o, :].reshape(1, -1, 1, head_dim) for o in offset], axis=1
+                [
+                    self.sin[slice(int(o.start), int(o.stop), int(o.step) if o.step is not None else 1), :head_dim // 2]
+                    .reshape(1, -1, 1, head_dim // 2) for o in offset
+                ],
+                axis=0
             )
             cos = mx.concat(
-                [self.cos[o, :].reshape(1, -1, 1, head_dim) for o in offset], axis=1
+                [
+                    self.cos[slice(int(o.start), int(o.stop), int(o.step) if o.step is not None else 1), :head_dim // 2]
+                    .reshape(1, -1, 1, head_dim // 2) for o in offset
+                ],
+                axis=0
             )
         output = mx.zeros_like(x)
         if self.traditional:
@@ -47,4 +55,3 @@ class RoPE:
             output[..., : head_dim // 2] = x1 * cos - x2 * sin
             output[..., head_dim // 2 :] = x1 * sin + x2 * cos
         return output
-            

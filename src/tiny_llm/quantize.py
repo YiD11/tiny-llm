@@ -48,7 +48,7 @@ def quantized_matmul(
     b: mx.array,
     transpose_b: bool = False,
 ) -> mx.array:
-    pass
+    return  mx.quantized_matmul(a, b, scales=scales, group_size=group_size, biases=biases, bits=bits, transpose=transpose_b)
 
 
 def quantized_linear(
@@ -56,4 +56,7 @@ def quantized_linear(
     w: QuantizedWeights,
     bias: mx.array | None = None,
 ) -> mx.array:
-    pass
+    output = quantized_matmul(scales=w.scales, biases=w.biases, group_size=w.group_size, bits=w.bits, a=x, b=w.weight, transpose_b=True)
+    if bias is not None:
+        output += bias
+    return output
